@@ -1,6 +1,6 @@
 Prototype Vulkan backend for Pixar USD Hydra Graphics Interface (HGI).
 
-![picture alt](https://github.com/lumonix/hgiVk/blob/master/kitchen.png "Title is optional")
+![picture alt](https://github.com/lumonix/hgiVk/blob/master/kitchen.png "Kitchen")
 
 If you wish to run the test application, you can download it:
 https://github.com/lumonix/hgiVk/releases
@@ -75,6 +75,7 @@ This ensures the GPU is not currently using a resource we are about to destroy.
 
 The garbage collector is lock free by using a vector-per-thread for collecting to-be-destroyed objects.
 
+![picture alt](https://github.com/lumonix/hgiVk/blob/master/renderDocPrimId.png "RenderDocPrimId")
 
 
 
