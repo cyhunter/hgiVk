@@ -11,13 +11,16 @@ https://github.com/lumonix/hgiVk/releases
 
 
 The test application focusses on two parts of Hydra.
-1. Resource Sync
-2. Render Pass Execute
+
+* Resource Sync
+* Render Pass Execute
 
 There is a third phase managed by the application:
-3. EndFrame
+
+* EndFrame
 
 During EndFrame we submit all GPU work recorded and proceed to the next CPU frame.
+
 
 
 ## Resource Sync ##
@@ -37,6 +40,7 @@ Note that new resources are allocated via AMD's VulkanMemoryAllocator and it may
 Deleting of resources is managed via **HgiVkGarbageCollector**, more on that in EndFrame.
 
 
+
 ## Render Pass Execute ##
 
 A render pass in Hydra terms is the begin (and end) of one frame of rendering.
@@ -51,7 +55,6 @@ Similar to resource sync, PCE ensures there is a (draw) command buffer for each 
 However, vulkan requires that one 'render pass' (a set of attachments + draw calls) begins and ends in one **primary** command buffer. To do parallel command recording vulkan requires us to use **secondary** command buffers.
 
 PCE will interface with HgiVkCommandBufferManager to ensure each draw-call-thread has exclusive access to a secondary command buffer. Again via TLS. When the PCE finishes rendering it 'executes' the secondary command buffers into the primary.
-
 
 ## EndFrame ##
 
