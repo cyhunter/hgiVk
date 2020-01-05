@@ -11,6 +11,7 @@ https://github.com/lumonix/hgiVk/releases
 > There are known bugs / limitations. For example you might experience flickering / tearing.
 > There are missing barriers between UI thread reads and hydra thread writes.
 
+- - - -
 
 The test application focusses on two parts of Hydra.
 
@@ -23,7 +24,7 @@ There is a third phase managed by the application:
 
 During EndFrame we submit all GPU work recorded and proceed to the next CPU frame.
 
-
+- - - -
 
 ## Resource Sync ##
 
@@ -75,8 +76,10 @@ This ensures the GPU is not currently using a resource we are about to destroy.
 
 The garbage collector is lock free by using a vector-per-thread for collecting to-be-destroyed objects.
 
-![picture alt](https://github.com/lumonix/hgiVk/blob/master/renderDocPrimId.png "RenderDocPrimId")
+- - - -
 
+
+![picture alt](https://github.com/lumonix/hgiVk/blob/master/renderDocPrimId.png "RenderDocPrimId")
 
 
 ## References: ##
