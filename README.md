@@ -1,5 +1,7 @@
 Prototype Vulkan backend for Pixar USD Hydra Graphics Interface (HGI).
 
+![picture alt](https://github.com/lumonix/hgiVk/blob/master/kitchen.png "Title is optional")
+
 If you wish to run the test application, you can download it:
 https://github.com/lumonix/hgiVk/releases
 
