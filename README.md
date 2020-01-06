@@ -3,7 +3,7 @@ Prototype Vulkan backend for Pixar USD Hydra Graphics Interface (HGI).
 ![picture alt](https://github.com/lumonix/hgiVk/blob/master/kitchen.png "Kitchen")
 *[ kitchen scene running in vulkan / face normals, no subdivision ]*
 
-If you wish to run the test application, you can download it:
+If you wish to run the test application, you can download it here:
 https://github.com/lumonix/hgiVk/releases
 
 
@@ -31,7 +31,6 @@ During EndFrame we submit all GPU work recorded and proceed to the next CPU fram
 ![picture alt](https://github.com/lumonix/hgiVk/blob/master/nsight_ui.png "UI")
 *[ Nsight capture showing UI and Hydra rendering via same device ]*
 
-- - - -
 
 ## Resource Sync ##
 
