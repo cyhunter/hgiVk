@@ -114,6 +114,7 @@ Areas explored:
 - [ ] UsdPreview Surface + lightdome
 - [ ] Blend modes (alpha blending)
 - [ ] GPU memory defragmentation (VulkanMemoryAllocator)
+- [ ] Pipeline cache
 - [ ] msaa resolve for depth buffer
 - [ ] Storage buffers
 - [ ] Compute
