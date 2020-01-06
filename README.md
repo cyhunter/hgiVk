@@ -14,7 +14,10 @@ https://github.com/lumonix/hgiVk/releases
 
 - - - -
 
-The test application focusses on two parts of Hydra.
+The Imgui-based test application uses a custom, minimal HdRenderDelegate.
+The end-goal is to be able to run Storm (HdSt), but with vulkan enabled.
+
+The render delegate focusses on two parts of Hydra.
 
 * Resource Sync
 * Render Pass Execute
