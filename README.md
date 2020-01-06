@@ -42,6 +42,9 @@ Note that new resources are allocated via AMD's VulkanMemoryAllocator and it may
 
 Deleting of resources is managed via **HgiVkGarbageCollector**, more on that in EndFrame.
 
+> :warning: It is unclear to me if having a command buffer for every thread is the right approach.
+> If we have 16 cores, it means we have 16 command buffers per frame. If we do parallel encoding, add another 16 secondary command buffers. Since Hydra uses tbb parallel_for (with grainSize=1) we have no direct control over how wide it goes.
+> If this ends up being an unfavorable amount of command buffers, we can always take the approach Storm currently takes. During sync it collects the resource changes (tbb concurrent queue), but does not record GPU commands. The GPU commands (OpenGL) are generated during at the start of RenderPass execute where we could exactly control how many threads to use.
 
 
 ## Render Pass Execute ##
@@ -52,7 +55,7 @@ Hydra provided a list of render targets to fill ('AOVs').
 The basic responsibility is that during execute, for each rprim, we record one or more draw calls.
 This could be single thread or multi-threaded. It is entirely up to the RenderDelegate to implement.
 
-In HgiVk we support parallel draw-call recording via **HgiVkParallalCommandEncoder** (PCE).
+In HgiVk we support parallel draw-call recording via **HgiVkParallelCommandEncoder** (PCE).
 Similar to resource sync, PCE ensures there is a (draw) command buffer for each thread.
 
 However, vulkan requires that one 'render pass' (a set of attachments + draw calls) begins and ends in one **primary** command buffer. To do parallel command recording vulkan requires us to use **secondary** command buffers.
@@ -75,6 +78,46 @@ When we are about to re-use a frame we permanently destroy the GPU resources in 
 This ensures the GPU is not currently using a resource we are about to destroy.
 
 The garbage collector is lock free by using a vector-per-thread for collecting to-be-destroyed objects.
+
+- - - -
+
+Areas explored:
+
+- [x] Vulkan instance and device setup
+- [x] Imgui interop (Hydra + UI share device)
+- [x] Vulkan Memory Allocator
+- [x] Runtime shader compiling (glslang)
+- [x] GLSL #include directive 
+- [x] Vulkan debug (validation layers, markers)
+- [x] Vulkan swapchain
+- [x] Vulkan Pipeline and RenderPass (cache)
+- [x] Resource bindings (descriptor sets)
+- [x] Mesh create / destroy (vertex buffers)
+- [x] Uniform buffers
+- [x] Push constants
+- [x] DrawIndexed
+- [x] Parallel command buffer recording
+- [x] Multi-frame rendering + garbage collection (CPU-GPU ring buffer)
+- [x] CPU culling
+- [x] GPU picking (GPU to CPU texture copy)
+- [x] MSAA + resolve image
+- [x] Fullscreen passes (post-effects)
+- [ ] UsdPreview Surface + lightdome
+- [ ] GPU memory defragmentation (VulkanMemoryAllocator)
+- [ ] msaa resolve for depth buffer
+- [ ] Storage buffers
+- [ ] Compute
+- [ ] HdComputations
+- [ ] Regular textures
+- [ ] UDIM textures
+- [ ] Ptex textures
+- [ ] Tessellation (OSD)
+- [ ] Basis curves
+- [ ] Point instancers
+- [ ] Volumes
+- [ ] Prim Instancing
+- [ ] GPU culling 
+- [ ] Lighting (UsdLux)
 
 - - - -
 
