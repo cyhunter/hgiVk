@@ -1,6 +1,7 @@
 Prototype Vulkan backend for Pixar USD Hydra Graphics Interface (HGI).
 
 ![picture alt](https://github.com/lumonix/hgiVk/blob/master/kitchen.png "Kitchen")
+*[ kitchen scene running in vulkan / face normals, no subdivision ]*
 
 If you wish to run the test application, you can download it:
 https://github.com/lumonix/hgiVk/releases
@@ -123,7 +124,7 @@ Areas explored:
 
 
 ![picture alt](https://github.com/lumonix/hgiVk/blob/master/renderDocPrimId.png "RenderDocPrimId")
-
+*[ Toy soldier Apple-USDZ, Vulkan, showing primId buffer in RenderDoc ]*
 
 ## References: ##
 * https://ourmachinery.com/post/vulkan-command-buffer-management/
