@@ -112,6 +112,7 @@ Areas explored:
 - [x] MSAA + resolve image
 - [x] Fullscreen passes (post-effects)
 - [ ] UsdPreview Surface + lightdome
+- [ ] Blend modes (alpha blending)
 - [ ] GPU memory defragmentation (VulkanMemoryAllocator)
 - [ ] msaa resolve for depth buffer
 - [ ] Storage buffers
