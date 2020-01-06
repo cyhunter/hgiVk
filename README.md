@@ -69,6 +69,9 @@ However, vulkan requires that one 'render pass' (a set of attachments + draw cal
 
 PCE will interface with HgiVkCommandBufferManager to ensure each draw-call-thread has exclusive access to a secondary command buffer. Again via TLS. When the PCE finishes rendering it 'executes' the secondary command buffers into the primary.
 
+![picture alt](https://github.com/lumonix/hgiVk/blob/master/renderDocPrimId.png "RenderDocPrimId")
+*[ Toy soldier Apple-USDZ, showing primId buffer and parallel encoder in RenderDoc ]*
+
 ## EndFrame ##
 
 When all sync and execute is completed a call to Hgi::EndFrame is called by the application.
@@ -128,9 +131,6 @@ Areas explored:
 
 - - - -
 
-
-![picture alt](https://github.com/lumonix/hgiVk/blob/master/renderDocPrimId.png "RenderDocPrimId")
-*[ Toy soldier Apple-USDZ, Vulkan, showing primId buffer in RenderDoc ]*
 
 ## References: ##
 * https://ourmachinery.com/post/vulkan-command-buffer-management/
