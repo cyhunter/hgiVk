@@ -28,6 +28,9 @@ There is a third phase managed by the application:
 
 During EndFrame we submit all GPU work recorded and proceed to the next CPU frame.
 
+![picture alt](https://github.com/lumonix/hgiVk/blob/master/nsight_ui.png "UI")
+*[ Nsight capture showing UI and Hydra rendering via same device ]*
+
 - - - -
 
 ## Resource Sync ##
