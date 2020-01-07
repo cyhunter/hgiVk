@@ -120,6 +120,7 @@ Areas explored:
 - [ ] Compute
 - [ ] HdComputations
 - [ ] Regular textures
+- [ ] Mipmap gen
 - [ ] UDIM textures
 - [ ] Ptex textures
 - [ ] Tessellation (OSD)
