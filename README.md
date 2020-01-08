@@ -111,6 +111,9 @@ Areas explored:
 - [x] GPU picking (GPU to CPU texture copy)
 - [x] MSAA + resolve image
 - [x] Fullscreen passes (post-effects)
+
+Todo:
+
 - [ ] UsdPreview Surface + lightdome
 - [ ] Blend modes (alpha blending)
 - [ ] GPU memory defragmentation (VulkanMemoryAllocator)
