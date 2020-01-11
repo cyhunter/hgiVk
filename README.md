@@ -114,6 +114,7 @@ Areas explored:
 
 Todo:
 
+- [ ] TimeStamp queries
 - [ ] UsdPreview Surface + lightdome
 - [ ] Blend modes (alpha blending)
 - [ ] GPU memory defragmentation (VulkanMemoryAllocator)
