@@ -50,7 +50,7 @@ class HgiParallelGraphicsEncoder
 {
 public:
     HGI_API
-    HgiParallelGraphicsEncoder();
+    HgiParallelGraphicsEncoder(const char* debugName=nullptr);
 
     HGI_API
     virtual ~HgiParallelGraphicsEncoder();

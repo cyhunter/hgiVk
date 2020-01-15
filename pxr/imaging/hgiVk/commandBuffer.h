@@ -4,9 +4,13 @@
 #include <vector>
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hgi/encoderOps.h"
 #include "pxr/imaging/hgi/graphicsEncoderDesc.h"
 #include "pxr/imaging/hgiVk/api.h"
 #include "pxr/imaging/hgiVk/vulkan.h"
+
+#define HGIVK_MAX_TIMESTAMPS 16
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -80,6 +84,29 @@ public:
     HGIVK_API
     VkCommandBuffer GetVulkanCommandBuffer() const;
 
+    /// Set debug name.
+    HGIVK_API
+    void SetDebugName(const char* name);
+
+    /// Push a time stamp onto stack. This records the start time (TOP_OF_PIPE).
+    HGIVK_API
+    void PushTimeQuery(const char* name);
+
+    /// Pop last timestamp of stack. This records the end time (BOTTOM_OF_PIPE).
+    HGIVK_API
+    void PopTimeQuery();
+
+    /// Returns the list of recorded time queries.
+    /// This must be called after EndRecording & before recording is re-started.
+    HGIVK_API
+    HgiTimeQueryVector const& GetTimeQueries();
+
+    /// Reset time queries. This must be called before any render pass begins.
+    /// It is called from the command buffer manager at BeginFrame.
+    /// Reset happens in the provided cmd buf, not the internal cmd buf.
+    HGIVK_API
+    void ResetTimeQueries(HgiVkCommandBuffer* cb);
+
 private:
     HgiVkCommandBuffer() = delete;
     HgiVkCommandBuffer & operator= (const HgiVkCommandBuffer&) = delete;
@@ -96,8 +123,11 @@ private:
     bool _isRecording;
 
     VkCommandBuffer _vkCommandBuffer;
-
     VkCommandBufferInheritanceInfo _vkInheritanceInfo;
+
+    VkQueryPool _vkTimeStampQueryPool;
+    HgiTimeQueryVector _timeQueries;
+    bool _timeQueriesReset;
 };
 
 typedef std::vector<HgiVkCommandBuffer*> HgiVkCommandBufferVector;

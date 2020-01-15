@@ -2,6 +2,7 @@
 #define PXR_IMAGING_HGI_BUFFER_H
 
 #include <stdlib.h>
+#include <string>
 #include <vector>
 
 #include "pxr/pxr.h"
@@ -75,6 +76,7 @@ struct HgiBufferDesc {
     HGI_API
     HgiBufferDesc();
 
+    std::string debugName;
     HgiBufferUsage usage;
     size_t byteSize;
     void const* data;

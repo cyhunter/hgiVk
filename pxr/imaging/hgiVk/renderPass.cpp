@@ -3,6 +3,7 @@
 #include "pxr/imaging/hgiVk/commandBuffer.h"
 #include "pxr/imaging/hgiVk/conversions.h"
 #include "pxr/imaging/hgiVk/device.h"
+#include "pxr/imaging/hgiVk/diagnostic.h"
 #include "pxr/imaging/hgiVk/renderPass.h"
 #include "pxr/imaging/hgiVk/texture.h"
 #include "pxr/imaging/hgiVk/vulkan.h"
@@ -125,6 +126,16 @@ HgiVkRenderPass::HgiVkRenderPass(
             &_vkRenderPass) == VK_SUCCESS
     );
 
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Render Pass " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkRenderPass,
+            VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT,
+            debugLabel.c_str());
+    }
+
     VkFramebufferCreateInfo fbufCreateInfo =
         {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     fbufCreateInfo.renderPass = _vkRenderPass;
@@ -141,6 +152,16 @@ HgiVkRenderPass::HgiVkRenderPass(
             HgiVkAllocator(),
             &_vkFramebuffer) == VK_SUCCESS
     );
+
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Framebuffer " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkFramebuffer,
+            VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT,
+            debugLabel.c_str());
+    }
 }
 
 HgiVkRenderPass::~HgiVkRenderPass()

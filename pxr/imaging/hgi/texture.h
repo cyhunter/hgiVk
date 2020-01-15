@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HGI_TEXTURE_H
 #define PXR_IMAGING_HGI_TEXTURE_H
 
+#include <string>
+
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/hgi/api.h"
@@ -74,6 +76,10 @@ typedef HgiTexture* HgiTextureHandle;
 ///   The format of the texture.
 /// <li>dimensions:
 ///   The resolution of the texture (width, height, depth/volume).</li>
+/// <li>layerCount:
+///   The number of layers (texture-arrays).</li>
+/// <li>mipLevels:
+///   The number of mips in texture.</li>
 /// <li>sampleCount:
 ///   samples per texel (multi-sampling)</li>
 /// <li>pixelsByteSize:
@@ -91,14 +97,19 @@ struct HgiTextureDesc {
     : usage(HgiTextureUsageBitsColorTarget)
     , format(HgiFormatInvalid)
     , dimensions(0)
+    , layerCount(1)
+    , mipLevels(1)
     , sampleCount(HgiSampleCount1)
     , pixelsByteSize(0)
     , pixelData(nullptr)
     {}
 
+    std::string debugName;
     HgiTextureUsage usage;
     HgiFormat format;
     GfVec3i dimensions;
+    uint16_t layerCount;
+    uint16_t mipLevels;
     HgiSampleCount sampleCount;
     size_t pixelsByteSize;
     void const* pixelData;

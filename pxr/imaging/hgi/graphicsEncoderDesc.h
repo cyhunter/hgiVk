@@ -24,12 +24,14 @@
 #ifndef PXR_IMAGING_HGI_GRAPHICS_ENCODER_DESC_H
 #define PXR_IMAGING_HGI_GRAPHICS_ENCODER_DESC_H
 
+#include <string>
+#include <vector>
+
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/base/gf/vec4f.h"
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,7 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   The value to clear the attachment with (r,g,b,a) or (depth,stencil,x,x)</li>
 ///
 struct HgiAttachmentDesc {
-    HgiAttachmentDesc() 
+    HgiAttachmentDesc()
     : texture(nullptr)
     , loadOp(HgiAttachmentLoadOpLoad)
     , storeOp(HgiAttachmentStoreOpStore)
@@ -107,6 +109,7 @@ struct HgiGraphicsEncoderDesc {
         return !colorAttachments.empty() || depthAttachment.texture;
     }
 
+    std::string debugName;
     HgiAttachmentDescVector colorAttachments;
     HgiAttachmentDesc depthAttachment;
     uint32_t width;

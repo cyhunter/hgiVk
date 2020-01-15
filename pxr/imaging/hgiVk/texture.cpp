@@ -25,8 +25,6 @@ HgiVkTexture::HgiVkTexture(
     : HgiTexture(desc)
     , _device(device)
     , _descriptor(desc)
-    , _mipLevels(1) // XXX currently not supplied by hgi
-    , _layerCnt(1)  // XXX hgi 'dimensions.z' is volume, not layers
     , _vkImage(nullptr)
     , _vmaImageAllocation(nullptr)
 {
@@ -55,8 +53,8 @@ HgiVkTexture::HgiVkTexture(
     imageCreateInfo.format = isDepthBuffer ? VK_FORMAT_D32_SFLOAT_S8_UINT :
                               HgiVkConversions::GetFormat(desc.format);
 
-    imageCreateInfo.mipLevels = _mipLevels;
-    imageCreateInfo.arrayLayers = _layerCnt;
+    imageCreateInfo.mipLevels = desc.mipLevels;
+    imageCreateInfo.arrayLayers = desc.layerCount;
     imageCreateInfo.samples= HgiVkConversions::GetSampleCount(desc.sampleCount);
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -95,6 +93,16 @@ HgiVkTexture::HgiVkTexture(
             nullptr) == VK_SUCCESS
     );
 
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Image " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkImage,
+            VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT,
+            debugLabel.c_str());
+    }
+
     //
     // Create a texture sampler
     //
@@ -117,7 +125,7 @@ HgiVkTexture::HgiVkTexture(
     sampler.mipLodBias = 0.0f;
     sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     sampler.minLod = 0.0f;
-    sampler.maxLod = (float) _mipLevels;
+    sampler.maxLod = (float) desc.mipLevels;
     sampler.maxAnisotropy = supportAnisotropy ?
                             vkDeviceProps.limits.maxSamplerAnisotropy : 1.0f;
     sampler.anisotropyEnable = supportAnisotropy ? VK_TRUE : VK_FALSE;
@@ -129,6 +137,16 @@ HgiVkTexture::HgiVkTexture(
             HgiVkAllocator(),
             &_vkDescriptor.sampler) == VK_SUCCESS
     );
+
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Sampler " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkDescriptor.sampler,
+            VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT,
+            debugLabel.c_str());
+    }
 
     //
     // Create image view
@@ -159,13 +177,13 @@ HgiVkTexture::HgiVkTexture(
 
     view.subresourceRange.baseMipLevel = 0;
     view.subresourceRange.baseArrayLayer = 0;
-    view.subresourceRange.layerCount = _layerCnt;
+    view.subresourceRange.layerCount = desc.layerCount;
 
-    if (imageCreateInfo.tiling != VK_IMAGE_TILING_OPTIMAL && _mipLevels>1) {
+    if (imageCreateInfo.tiling != VK_IMAGE_TILING_OPTIMAL && desc.mipLevels>1) {
         TF_WARN("linear tiled images usually do not support mips");
     }
 
-    view.subresourceRange.levelCount = _mipLevels;
+    view.subresourceRange.levelCount = desc.mipLevels;
 
     view.image = _vkImage;
 
@@ -177,11 +195,23 @@ HgiVkTexture::HgiVkTexture(
             &_vkDescriptor.imageView) == VK_SUCCESS
     );
 
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Image View " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkDescriptor.imageView,
+            VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT,
+            debugLabel.c_str());
+    }
+
     //
     // Transition image
     //
 
     _vkDescriptor.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+// todo Storage images should use VK_IMAGE_LAYOUT_GENERAL
 
     VkImageLayout newLayout = isDepthBuffer ?
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL :
@@ -220,8 +250,6 @@ HgiVkTexture::HgiVkTexture(
     : HgiTexture(desc)
     , _device(device)
     , _descriptor(desc)
-    , _mipLevels(1)
-    , _layerCnt(1)
     , _vkDescriptor(vkDesc)
     , _vkImage(nullptr)
     , _vmaImageAllocation(nullptr)
@@ -288,18 +316,6 @@ HgiVkTexture::GetDescriptor() const
     return _descriptor;
 }
 
-uint32_t
-HgiVkTexture::GetMipLevelCount() const
-{
-    return _mipLevels;
-}
-
-uint32_t
-HgiVkTexture::GetLayerCount() const
-{
-    return _layerCnt;
-}
-
 void
 HgiVkTexture::CopyTextureFrom(
     HgiVkCommandBuffer* cb,
@@ -318,7 +334,7 @@ HgiVkTexture::CopyTextureFrom(
     // Default numMips is: 1 + floor(log2(max(w, h, d)));
 
     uint32_t offset = 0;
-    for (uint32_t i = 0; i < _mipLevels; i++) {
+    for (uint32_t i = 0; i < _descriptor.mipLevels; i++) {
         float div = powf(2, i);
         float mipWidth = std::max(1.0f, std::floor(width / div));
         float mipHeight = std::max(1.0f, std::floor(height / div));
@@ -327,7 +343,7 @@ HgiVkTexture::CopyTextureFrom(
         bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         bufferCopyRegion.imageSubresource.mipLevel = i;
         bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
-        bufferCopyRegion.imageSubresource.layerCount = _layerCnt;
+        bufferCopyRegion.imageSubresource.layerCount = _descriptor.layerCount;
         bufferCopyRegion.imageExtent.width = (uint32_t) mipWidth;
         bufferCopyRegion.imageExtent.height = (uint32_t) mipHeight;
         bufferCopyRegion.imageExtent.depth = (uint32_t) mipDepth;
@@ -408,8 +424,8 @@ HgiVkTexture::TransitionImageBarrier(
     barrier[0].subresourceRange.aspectMask = isDepthBuffer ?
         VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT :
         VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier[0].subresourceRange.levelCount = _mipLevels;
-    barrier[0].subresourceRange.layerCount = _layerCnt;
+    barrier[0].subresourceRange.levelCount = _descriptor.mipLevels;
+    barrier[0].subresourceRange.layerCount = _descriptor.layerCount;
 
     // Insert a memory dependency at the proper pipeline stages that will
     // execute the image layout transition.

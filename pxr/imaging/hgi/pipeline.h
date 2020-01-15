@@ -1,6 +1,7 @@
 #ifndef PXR_IMAGING_HGI_PIPELINE_H
 #define PXR_IMAGING_HGI_PIPELINE_H
 
+#include <string>
 #include <vector>
 
 #include "pxr/pxr.h"
@@ -133,12 +134,16 @@ bool operator!=(
 /// <li>shaderProgram:
 ///   Shader functions/stages used in this pipeline.</li>
 /// <li>depthState:
+///   (Graphics pipeline only)
 ///   Describes depth state for a pipeline.</li>
 /// <li>depthCompareOp:
+///   (Graphics pipeline only)
 ///   The compare operation to use when depth test is enabled.</li>
 /// <li>multiSampleState:
+///   (Graphics pipeline only)
 ///   Various settings to control multi-sampling.</li>
 /// <li>rasterizationState:
+///   (Graphics pipeline only)
 ///   Various settings to control rasterization.</li>
 /// </ul>
 ///
@@ -146,6 +151,7 @@ struct HgiPipelineDesc {
     HGI_API
     HgiPipelineDesc();
 
+    std::string debugName;
     HgiPipelineType pipelineType;
     HgiResourceBindingsHandle resourceBindings;
     HgiShaderProgramHandle shaderProgram;

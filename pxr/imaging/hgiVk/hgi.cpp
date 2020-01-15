@@ -149,7 +149,8 @@ HgiVk::CreateGraphicsEncoder(
 HgiParallelGraphicsEncoderUniquePtr
 HgiVk::CreateParallelGraphicsEncoder(
     HgiGraphicsEncoderDesc const& desc,
-    HgiPipelineHandle pipeline)
+    HgiPipelineHandle pipeline,
+    const char* debugName)
 {
     if (!_ValidateGraphicsEncoderDescriptor(desc)) return nullptr;
 
@@ -157,7 +158,7 @@ HgiVk::CreateParallelGraphicsEncoder(
     HgiVkCommandBufferManager* cbm = device->GetCommandBufferManager();
     HgiVkCommandBuffer* cb = cbm->GetDrawCommandBuffer();
     HgiVkParallelGraphicsEncoder* enc =
-        new HgiVkParallelGraphicsEncoder(device, cb, desc, pipeline);
+        new HgiVkParallelGraphicsEncoder(debugName, device, cb, desc, pipeline);
 
     return HgiParallelGraphicsEncoderUniquePtr(enc);
 }
@@ -362,6 +363,15 @@ HgiVk::GetMemoryInfo(size_t* used, size_t* unused)
     device->GetDeviceMemoryInfo(used, unused);
 }
 
+HgiTimeQueryVector const&
+HgiVk::GetTimeQueries()
+{
+    // XXX for now assume they want the primary device time queries.
+    // But note we can have multiple _devices.
+    HgiVkDevice* device = GetPrimaryDevice();
+    return device->GetTimeQueries();
+}
+
 HgiVkInstance*
 HgiVk::GetVulkanInstance() const
 {
@@ -435,7 +445,7 @@ HgiVk::DestroyHgiVk()
     _instance = nullptr;
 }
 
-unsigned int
+uint32_t
 HgiVk::GetThreadCount()
 {
     // Hydra's RenderIndex uses WorkParallelForN to sync prims.

@@ -5,6 +5,7 @@
 #include "pxr/imaging/hgiVk/commandBuffer.h"
 #include "pxr/imaging/hgiVk/conversions.h"
 #include "pxr/imaging/hgiVk/device.h"
+#include "pxr/imaging/hgiVk/diagnostic.h"
 #include "pxr/imaging/hgiVk/pipeline.h"
 #include "pxr/imaging/hgiVk/renderPass.h"
 #include "pxr/imaging/hgiVk/resourceBindings.h"
@@ -55,8 +56,6 @@ HgiVkPipeline::BindPipeline(
 VkPipeline
 HgiVkPipeline::AcquirePipeline(HgiVkRenderPass* rp)
 {
-    TF_VERIFY(rp, "RenderPass null when acquiring pipeline.");
-
     // We don't want clients to have to worry about pipeline - render pass
     // compatibility in Hgi. Clients manage pipelines independently and bind
     // pipelines to encoders. It is therefor possible they may not create an
@@ -65,19 +64,39 @@ HgiVkPipeline::AcquirePipeline(HgiVkRenderPass* rp)
     // receive an incompatible graphics encoder (aka render pass).
     // For more info see vulkan docs: renderpass-compatibility.
 
-    HgiGraphicsEncoderDesc const& desc = rp->GetDescriptor();
-    for (_Pipeline p : _pipelines) {
-        // XXX it may be beneficial to add a hash onto HgiGraphicsEncoderDesc
-        // for cheaper comparing.
-        if (p.desc == desc) return p.vkPipeline;
-    }
+    if (_descriptor.pipelineType==HgiPipelineTypeGraphics) {
 
-    // todo Below we assume this is a gfx pipeline.
-    // We need to also implement compute version: vkCreateComputePipelines
+        // First check the cache if we have already created a pipeline for the
+        // provided render-pass. See note above.
+        TF_VERIFY(rp, "RenderPass null when acquiring pipeline.");
+        HgiGraphicsEncoderDesc const& rpDesc = rp->GetDescriptor();
+
+        for (_Pipeline p : _pipelines) {
+            if (p.desc == rpDesc) return p.vkPipeline;
+        }
+        return _AcquireGraphicsPipeline(rp);
+
+    } else if (_descriptor.pipelineType==HgiPipelineTypeCompute) {
+
+        // Compute pipelines don't use render passes, so we only ever create
+        // one pipeline. If we already have it, we can exit early.
+        if (!_pipelines.empty()) {
+            return _pipelines.front().vkPipeline;
+        }
+
+        return _AcquireComputePipeline();
+    }
+}
+
+VkPipeline
+HgiVkPipeline::_AcquireGraphicsPipeline(HgiVkRenderPass* rp)
+{
     TF_VERIFY(_descriptor.pipelineType==HgiPipelineTypeGraphics);
 
     VkGraphicsPipelineCreateInfo pipeCreateInfo =
         {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+
+    HgiGraphicsEncoderDesc const& rpDesc = rp->GetDescriptor();
 
     //
     // Shaders
@@ -243,7 +262,7 @@ HgiVkPipeline::AcquirePipeline(HgiVkRenderPass* rp)
     // Per attachment configuration of how output color blends with destination.
     //
     std::vector<VkPipelineColorBlendAttachmentState> colorAttachState;
-    for (HgiAttachmentDesc const& attachment : desc.colorAttachments) {
+    for (HgiAttachmentDesc const& attachment : rpDesc.colorAttachments) {
         VkPipelineColorBlendAttachmentState ca =
             {VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
 
@@ -293,14 +312,14 @@ HgiVkPipeline::AcquirePipeline(HgiVkRenderPass* rp)
     //
     // Render pass
     //
-    HgiVkRenderPass* renderPass = _device->AcquireRenderPass(desc);
+    HgiVkRenderPass* renderPass = _device->AcquireRenderPass(rpDesc);
     pipeCreateInfo.renderPass = renderPass->GetVulkanRenderPass();
 
     //
     // Make pipeline
     //
     _Pipeline pipeline;
-    pipeline.desc = desc;
+    pipeline.desc = rpDesc;
 
     // xxx we need to add a pipeline cache to avoid app having to keep compiling
     // shader micro-code for every pipeline combination. We except that the
@@ -316,6 +335,86 @@ HgiVkPipeline::AcquirePipeline(HgiVkRenderPass* rp)
             HgiVkAllocator(),
             &pipeline.vkPipeline) == VK_SUCCESS
     );
+
+    _pipelines.push_back(pipeline);
+
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Graphics Pipeline " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)pipeline.vkPipeline,
+            VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT,
+            debugLabel.c_str());
+    }
+
+    return pipeline.vkPipeline;
+}
+
+VkPipeline
+HgiVkPipeline::_AcquireComputePipeline()
+{
+    VkComputePipelineCreateInfo pipeCreateInfo =
+        {VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
+
+    //
+    // Shader
+    //
+    HgiVkShaderProgram const* shaderProgram =
+        static_cast<HgiVkShaderProgram const*>(_descriptor.shaderProgram);
+    HgiShaderFunctionHandleVector const& sfv =
+        shaderProgram->GetShaderFunctions();
+
+    if (sfv.empty()) {
+        TF_CODING_ERROR("Missing compute shader");
+        return nullptr;
+    }
+
+    HgiVkShaderFunction const* s =
+        static_cast<HgiVkShaderFunction const*>(sfv.front());
+
+    VkPipelineShaderStageCreateInfo stage =
+        {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+    pipeCreateInfo.stage.stage = s->GetShaderStage();
+    pipeCreateInfo.stage.module = s->GetShaderModule();
+    pipeCreateInfo.stage.pName = s->GetShaderFunctionName();
+    pipeCreateInfo.stage.pNext = nullptr;
+    pipeCreateInfo.stage.pSpecializationInfo = nullptr;
+    pipeCreateInfo.stage.flags = 0;
+
+    //
+    // Pipeline layout
+    // This was generated when the resource bindings was created.
+    //
+    HgiVkResourceBindings* resources =
+        static_cast<HgiVkResourceBindings*>(_descriptor.resourceBindings);
+
+    pipeCreateInfo.layout = resources->GetPipelineLayout();
+
+    //
+    // Make pipeline
+    //
+    _Pipeline pipeline;
+
+    TF_VERIFY(
+        vkCreateComputePipelines(
+            _device->GetVulkanDevice(),
+            _device->GetVulkanPipelineCache(),
+            1,
+            &pipeCreateInfo,
+            HgiVkAllocator(),
+            &pipeline.vkPipeline) == VK_SUCCESS
+    );
+
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Compute Pipeline " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)pipeline.vkPipeline,
+            VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT,
+            debugLabel.c_str());
+    }
 
     _pipelines.push_back(pipeline);
     return pipeline.vkPipeline;

@@ -27,8 +27,9 @@ class HgiVkParallelGraphicsEncoder final : public HgiParallelGraphicsEncoder
 public:
     HGIVK_API
     HgiVkParallelGraphicsEncoder(
+        const char* debugName,
         HgiVkDevice* device,
-        HgiVkCommandBuffer* cb,
+        HgiVkCommandBuffer* primaryCB,
         HgiGraphicsEncoderDesc const& desc,
         HgiPipelineHandle pipeline);
 
@@ -53,6 +54,7 @@ private:
     HgiVkCommandBuffer* _primaryCommandBuffer;
     HgiVkRenderPass* _renderPass;
     bool _isRecording;
+    bool _isDebugging;
     size_t _cmdBufBlockId;
 
     // Encoder is used only one frame so storing multi-frame state on encoder

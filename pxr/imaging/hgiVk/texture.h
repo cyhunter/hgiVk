@@ -59,14 +59,6 @@ public:
     HGIVK_API
     HgiTextureDesc const& GetDescriptor() const;
 
-    /// Returns the mip level cnt
-    HGIVK_API
-    uint32_t GetMipLevelCount() const;
-
-    /// Returns the layer cnt
-    HGIVK_API
-    uint32_t GetLayerCount() const;
-
     /// Records a copy command to copy the data from the provided source buffer
     /// into this (destination) texture. This requires that the source buffer is
     /// setup as a staging buffer (HgiBufferUsageTransferSrc) and that this
@@ -77,6 +69,7 @@ public:
         HgiVkBuffer const& src);
 
     /// Transition image from its current layout to newLayout
+    HGIVK_API
     void TransitionImageBarrier(
         HgiVkCommandBuffer* cb,
         HgiVkTexture* tex,
@@ -94,8 +87,6 @@ private:
     HgiVkDevice* _device;
 
     HgiTextureDesc _descriptor;
-    uint32_t _mipLevels;
-    uint32_t _layerCnt;
 
     VkDescriptorImageInfo _vkDescriptor; // VkSampler,VkImageView,VkImageLayout
     VkImage _vkImage;

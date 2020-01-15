@@ -1,14 +1,15 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/imaging/hgiVk/commandBufferManager.h"
 #include "pxr/imaging/hgiVk/device.h"
+#include "pxr/imaging/hgiVk/diagnostic.h"
 #include "pxr/imaging/hgiVk/hgi.h"
 #include "pxr/imaging/hgiVk/vulkan.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-thread_local uint16_t _cmdBufThreadLocalIndex = 0;
-thread_local uint64_t _cmdBufThreadLocalFrame = ~0ull;
+thread_local uint16_t _HgiVkcmdBufThreadLocalIndex = 0;
+thread_local uint64_t _HgiVkcmdBufThreadLocalFrame = ~0ull;
 
 
 HgiVkCommandBufferManager::HgiVkCommandBufferManager(HgiVkDevice* device)
@@ -18,7 +19,9 @@ HgiVkCommandBufferManager::HgiVkCommandBufferManager(HgiVkDevice* device)
     , _parallelEncoderCounter(0)
     , _vkSemaphore(nullptr)
 {
+    //
     // Create semaphore for gpu-gpu synchronization
+    //
     VkSemaphoreCreateInfo semaCreateInfo =
         {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 
@@ -33,15 +36,17 @@ HgiVkCommandBufferManager::HgiVkCommandBufferManager(HgiVkDevice* device)
 
 HgiVkCommandBufferManager::~HgiVkCommandBufferManager()
 {
-    for (HgiVkCommandBuffer* cb : _resourceCommandBuffers) {
-        delete cb;
-    }
-    for (HgiVkCommandBuffer* cb : _drawCommandBuffers) {
-        delete cb;
-    }
-    for (HgiVkCommandBuffer* cb : _secondaryDrawCommandBuffers) {
-        delete cb;
-    }
+    // Destroy command buffers
+    auto deleteCmdBufsFn = [](HgiVkCommandBufferVector& v) -> void {
+        for (HgiVkCommandBuffer* cb : v) {
+            delete cb;
+        }
+    };
+
+    deleteCmdBufsFn(_resourceCommandBuffers);
+    deleteCmdBufsFn(_drawCommandBuffers);
+    deleteCmdBufsFn(_secondaryDrawCommandBuffers);
+
     for (HgiVkCommandPool* cp : _commandPools) {
         delete cp;
     }
@@ -61,6 +66,22 @@ HgiVkCommandBufferManager::BeginFrame(uint64_t frame)
     // acquire the thread's command buffer.
     _frame = frame;
 
+    // Collect all time queries from previous run before resetting.
+    _timeQueries.clear();
+
+    auto mergeQueriesFn = [this](HgiVkCommandBufferVector const& v) -> void {
+        for (HgiVkCommandBuffer* cb : v) {
+            if (!cb) continue;
+            HgiTimeQueryVector const& q = cb->GetTimeQueries();
+            _timeQueries.insert(_timeQueries.end(), q.begin(), q.end());
+        }
+    };
+
+    mergeQueriesFn(_resourceCommandBuffers);
+    mergeQueriesFn(_drawCommandBuffers);
+    mergeQueriesFn(_secondaryDrawCommandBuffers);
+
+
     // Reset all command pools of the frame to re-use the command buffers.
     for (HgiVkCommandPool* cp : _commandPools) {
         cp->ResetCommandPool();
@@ -68,6 +89,25 @@ HgiVkCommandBufferManager::BeginFrame(uint64_t frame)
 
     // Make sure there are enough command buffers and pools. One per thread.
     _CreatePoolsAndBuffers();
+
+    // Reset all time queries for all available command buffers.
+    // We do this here instead of in HgiVkCommandBuffer::_BeginRecording,
+    // because this reset must happen before any render pass is started.
+    // Secondary command buffers are created on-demand so they may not be ready
+    // yet. As a consequence they will not be able to record time stamps until
+    // a few frames after they have been created.
+    HgiVkCommandBuffer* primaryCB = GetResourceCommandBuffer();
+
+    auto resetQueriesFn = [this, primaryCB](HgiVkCommandBufferVector const& v) {
+        for (HgiVkCommandBuffer* cb : v) {
+            if (!cb) continue;
+            cb->ResetTimeQueries(primaryCB);
+        }
+    };
+
+    resetQueriesFn(_resourceCommandBuffers);
+    resetQueriesFn(_drawCommandBuffers);
+    resetQueriesFn(_secondaryDrawCommandBuffers);
 }
 
 void
@@ -133,29 +173,6 @@ HgiVkCommandBufferManager::EndFrame(VkFence fence)
     _parallelEncoderCounter = 0;
 }
 
-void
-HgiVkCommandBufferManager::_UpdateThreadLocalIndex()
-{
-    /* MULTI-THREAD CALL*/
-
-    // Hydra will spawn multiple threads when syncing prims.
-    // We want each mesh, curve, etc to be able to record vulkan commands into
-    // a command buffer for parallel recording.
-
-    // When such a prim asks for a command buffer we determine what buffer to
-    // return based on _cmdBufThreadLocalIndex.
-    // This ensures each thread has an unique command buffer.
-
-    // When the next frame has started, each thread must re-acquire its
-    // _cmdBufThreadLocalIndex. This protects against threads being
-    // created, destroyed or the number of threads changing between frames.
-
-    if (_cmdBufThreadLocalFrame != _frame) {
-        _cmdBufThreadLocalFrame = _frame;
-        _cmdBufThreadLocalIndex = _nextAvailableIndex.fetch_add(1);
-    }
-}
-
 HgiVkCommandBuffer*
 HgiVkCommandBufferManager::GetResourceCommandBuffer()
 {
@@ -164,12 +181,12 @@ HgiVkCommandBufferManager::GetResourceCommandBuffer()
     // First ensure this thread has an unique index into the cmd buffer vector.
     _UpdateThreadLocalIndex();
 
-    if (_cmdBufThreadLocalIndex >= _resourceCommandBuffers.size()) {
+    if (_HgiVkcmdBufThreadLocalIndex >= _resourceCommandBuffers.size()) {
         TF_CODING_ERROR("cmdBuf numThreads > HgiVk::GetThreadCount");
-        _cmdBufThreadLocalIndex = 0;
+        _HgiVkcmdBufThreadLocalIndex = 0;
     }
 
-    return _resourceCommandBuffers[_cmdBufThreadLocalIndex];
+    return _resourceCommandBuffers[_HgiVkcmdBufThreadLocalIndex];
 }
 
 HgiVkCommandBuffer*
@@ -180,12 +197,12 @@ HgiVkCommandBufferManager::GetDrawCommandBuffer()
     // First ensure this thread has an unique index into the cmd buffer vector.
     _UpdateThreadLocalIndex();
 
-    if (_cmdBufThreadLocalIndex >= _drawCommandBuffers.size()) {
+    if (_HgiVkcmdBufThreadLocalIndex >= _drawCommandBuffers.size()) {
         TF_CODING_ERROR("cmdBuf numThreads > HgiVk::GetThreadCount");
-        _cmdBufThreadLocalIndex = 0;
+        _HgiVkcmdBufThreadLocalIndex = 0;
     }
 
-    return _drawCommandBuffers[_cmdBufThreadLocalIndex];
+    return _drawCommandBuffers[_HgiVkcmdBufThreadLocalIndex];
 }
 
 size_t
@@ -207,8 +224,9 @@ HgiVkCommandBufferManager::ReserveSecondaryDrawBuffersForParallelEncoder()
         // is currently doing rendering work (e.g. UI thread).
         // So why make room now? Because the parallel encoder calls this
         // before any threading has started, so we can safely resize the vector.
-        // During GetSecondaryDrawCommandBuffer we will be wide.
-        _secondaryDrawCommandBuffers.resize(requiredSize);
+        // During GetSecondaryDrawCommandBuffer we will be wide and shouldn't
+        // change the size of the vector.
+        _secondaryDrawCommandBuffers.resize(requiredSize, nullptr);
     }
 
     return index;
@@ -222,13 +240,13 @@ HgiVkCommandBufferManager::GetSecondaryDrawCommandBuffer(size_t id)
     // First ensure this thread has an unique index into the cmd buffer vector.
     _UpdateThreadLocalIndex();
 
-    if (_cmdBufThreadLocalIndex >= _secondaryDrawCommandBuffers.size()) {
+    if (_HgiVkcmdBufThreadLocalIndex >= _secondaryDrawCommandBuffers.size()) {
         TF_CODING_ERROR("cmdBuf numThreads > HgiVk::GetThreadCount");
-        _cmdBufThreadLocalIndex = 0;
+        _HgiVkcmdBufThreadLocalIndex = 0;
     }
 
     unsigned numThreads = HgiVk::GetThreadCount();
-    size_t offset = (id * numThreads) + _cmdBufThreadLocalIndex;
+    size_t offset = (id * numThreads) + _HgiVkcmdBufThreadLocalIndex;
     TF_VERIFY(offset < _secondaryDrawCommandBuffers.size());
 
     // If we didn't make the secondary command buffer yet, do so now.
@@ -240,13 +258,17 @@ HgiVkCommandBufferManager::GetSecondaryDrawCommandBuffer(size_t id)
         // time. So if a draw command buffer is used by thread-N that same
         // thread-N can only use secondary command buffers that were also
         // created by that same thread pool.
-        HgiVkCommandPool* cp = _commandPools[_cmdBufThreadLocalIndex];
+        HgiVkCommandPool* cp = _commandPools[_HgiVkcmdBufThreadLocalIndex];
 
-        _secondaryDrawCommandBuffers[offset] =
-            new HgiVkCommandBuffer(
-                _device,
-                cp,
-                HgiVkCommandBufferUsageSecondaryRenderPass);
+        HgiVkCommandBuffer* cb = new HgiVkCommandBuffer(
+            _device,
+            cp,
+            HgiVkCommandBufferUsageSecondaryRenderPass);
+
+        std::string debugLabel = "Secondary " + _debugName;
+        cb->SetDebugName(debugLabel.c_str());
+
+        _secondaryDrawCommandBuffers[offset] = cb;
     }
 
     return _secondaryDrawCommandBuffers[offset];
@@ -289,6 +311,40 @@ HgiVkCommandBufferManager::ExecuteSecondaryCommandBuffers(
 }
 
 void
+HgiVkCommandBufferManager::SetDebugName(std::string const& name)
+{
+    _debugName = name;
+
+    std::string debugLabel = "Semaphore " + name;
+    HgiVkSetDebugName(
+        _device,
+        (uint64_t)_vkSemaphore,
+        VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT,
+        debugLabel.c_str());
+
+    for (HgiVkCommandPool* pool : _commandPools) {
+        pool->SetDebugName(name);
+    }
+
+    auto setDebugNameFn = [name](HgiVkCommandBufferVector const& v) {
+        for (HgiVkCommandBuffer* cb : v) {
+            if (!cb) continue;
+            cb->SetDebugName(name.c_str());
+        }
+    };
+
+    setDebugNameFn(_resourceCommandBuffers);
+    setDebugNameFn(_drawCommandBuffers);
+    setDebugNameFn(_secondaryDrawCommandBuffers);
+}
+
+HgiTimeQueryVector const &
+HgiVkCommandBufferManager::GetTimeQueries() const
+{
+    return _timeQueries;
+}
+
+void
 HgiVkCommandBufferManager::_CreatePoolsAndBuffers()
 {
     unsigned numThreads = HgiVk::GetThreadCount();
@@ -314,6 +370,35 @@ HgiVkCommandBufferManager::_CreatePoolsAndBuffers()
                 cp,
                 HgiVkCommandBufferUsagePrimary)
         );
+
+        // Last loop
+        if (i==numThreads-1) {
+            // Update debug names on all new pools and buffers
+            SetDebugName(_debugName);
+        }
+    }
+}
+
+void
+HgiVkCommandBufferManager::_UpdateThreadLocalIndex()
+{
+    /* MULTI-THREAD CALL*/
+
+    // Hydra will spawn multiple threads when syncing prims.
+    // We want each mesh, curve, etc to be able to record vulkan commands into
+    // a command buffer for parallel recording.
+
+    // When such a prim asks for a command buffer we determine what buffer to
+    // return based on _HgiVkcmdBufThreadLocalIndex.
+    // This ensures each thread has an unique command buffer.
+
+    // When the next frame has started, each thread must re-acquire its
+    // _HgiVkcmdBufThreadLocalIndex. This protects against threads being
+    // created, destroyed or the number of threads changing between frames.
+
+    if (_HgiVkcmdBufThreadLocalFrame != _frame) {
+        _HgiVkcmdBufThreadLocalFrame = _frame;
+        _HgiVkcmdBufThreadLocalIndex = _nextAvailableIndex.fetch_add(1);
     }
 }
 

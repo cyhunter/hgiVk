@@ -29,16 +29,22 @@ public:
     void EndEncoding() override;
 
     HGIVK_API
+    void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;
+
+    HGIVK_API
+    void ResolveImage(HgiResolveImageOp const& resolveOp) override;
+
+    HGIVK_API
     void PushDebugGroup(const char* label) override;
 
     HGIVK_API
     void PopDebugGroup() override;
 
     HGIVK_API
-    void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;
+    void PushTimeQuery(const char* label) override;
 
     HGIVK_API
-    void ResolveImage(HgiResolveImageOp const& resolveOp) override;
+    void PopTimeQuery() override;
 
 private:
     HgiVkBlitEncoder() = delete;

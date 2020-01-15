@@ -30,6 +30,7 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/encoderOps.h"
 #include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/pipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
@@ -132,6 +133,16 @@ public:
     /// Pop the lastest debug marker off encoder.
     HGI_API
     virtual void PopDebugGroup() = 0;
+
+    /// Push a time query onto encoder. This records the start time.
+    /// Timer results can be retrieved via Hgi::GetTimeQueries().
+    HGI_API
+    virtual void PushTimeQuery(const char* name) = 0;
+
+    /// Pop last time query of encoder. This records the end time.
+    /// Timer results can be retrieved via Hgi::GetTimeQueries().
+    HGI_API
+    virtual void PopTimeQuery() = 0;
 
 private:
     HgiGraphicsEncoder & operator=(const HgiGraphicsEncoder&) = delete;

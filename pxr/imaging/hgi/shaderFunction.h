@@ -59,6 +59,7 @@ struct HgiShaderFunctionDesc {
     HGI_API
     HgiShaderFunctionDesc();
 
+    std::string debugName;
     HgiShaderStage shaderStage;
     std::string shaderCode;
 };

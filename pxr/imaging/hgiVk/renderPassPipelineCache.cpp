@@ -15,8 +15,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-thread_local uint16_t _rpcThreadLocalIndex = 0;
-thread_local uint64_t _rpcThreadLocalFrame = ~0ull;
+thread_local uint16_t _HgiVkrpcThreadLocalIndex = 0;
+thread_local uint64_t _HgiVkrpcThreadLocalFrame = ~0ull;
 
 
 struct HgiVkRenderPassCacheItem {
@@ -137,21 +137,21 @@ HgiVkRenderPassPipelineCache::AcquireRenderPass(
 
     // Acquire this thread's index into the thread local passes / pipelines.
 
-    if (_rpcThreadLocalFrame != _frame) {
-        _rpcThreadLocalIndex = _nextThreadLocalIndex.fetch_add(1);
-        _rpcThreadLocalFrame = _frame;
+    if (_HgiVkrpcThreadLocalFrame != _frame) {
+        _HgiVkrpcThreadLocalIndex = _nextThreadLocalIndex.fetch_add(1);
+        _HgiVkrpcThreadLocalFrame = _frame;
     }
 
     // If we didn't find the render pass in the global cache, look for it in
     // our thread_local vector to see if we already created a matching
     // render pass this frame.
 
-    if (_rpcThreadLocalIndex >= _threadRenderPasses.size()) {
+    if (_HgiVkrpcThreadLocalIndex >= _threadRenderPasses.size()) {
         TF_CODING_ERROR("rpc numThreads > HgiVk::GetThreadCount");
-        _rpcThreadLocalIndex = 0;
+        _HgiVkrpcThreadLocalIndex = 0;
     }
 
-    HgiVkRenderPassCacheVec& pv= _threadRenderPasses[_rpcThreadLocalIndex];
+    HgiVkRenderPassCacheVec& pv= _threadRenderPasses[_HgiVkrpcThreadLocalIndex];
     for (size_t i=0; i<pv.size(); i++) {
         HgiVkRenderPassCacheItem* item = pv[i];
         if (_CompareHgiGraphicsEncoderDesc(desc, *item)) {
@@ -178,7 +178,7 @@ HgiVkRenderPassPipelineCache::BeginFrame(uint64_t frame)
     _frame = frame;
 
     // Ensure the thread_local vectors have enough room for each thread.
-    unsigned numThreads = HgiVk::GetThreadCount();
+    uint32_t numThreads = HgiVk::GetThreadCount();
 
     if (_threadRenderPasses.size() != numThreads) {
         _threadRenderPasses.resize(numThreads);

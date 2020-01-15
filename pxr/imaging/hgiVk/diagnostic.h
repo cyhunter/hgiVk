@@ -45,6 +45,7 @@ HGIVK_API
 void HgiVkSetDebugName(
     HgiVkDevice* device,
     uint64_t vulkanObject,
+    uint32_t /*VkDebugReportObjectTypeEXT*/ objectType,
     const char* name);
 
 PXR_NAMESPACE_CLOSE_SCOPE

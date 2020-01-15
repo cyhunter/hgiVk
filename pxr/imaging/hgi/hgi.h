@@ -90,10 +90,13 @@ public:
     /// object that should be re-acquired each frame (don't hold onto it).
     /// You must also provide the pipeline object you plan to bind in each
     /// of the graphics encoders. (You must still bind it yourself).
+    /// (Optional) If `debugName` is provided a debug label and timestamp are
+    /// automatically added to wrap the begin and end of the encoder.
     HGI_API
     virtual HgiParallelGraphicsEncoderUniquePtr CreateParallelGraphicsEncoder(
         HgiGraphicsEncoderDesc const& desc,
-        HgiPipelineHandle pipeline) = 0;
+        HgiPipelineHandle pipeline,
+        const char* debugName=nullptr) = 0;
 
     /// Returns a blit encoder for temporary use that is ready to execute
     /// resource copy commands. BlitEncoder is a lightweight object that
@@ -168,6 +171,10 @@ public:
     /// Returns used and unused memmory (in bytes)
     HGI_API
     virtual void GetMemoryInfo(size_t* used, size_t* unused) = 0;
+
+    /// Returns the recorded time queries (time stamps).
+    HGI_API
+    virtual HgiTimeQueryVector const& GetTimeQueries() = 0;
 
 private:
     Hgi & operator=(const Hgi&) = delete;

@@ -47,7 +47,7 @@ HgiVkGraphicsEncoder::HgiVkGraphicsEncoder(
 HgiVkGraphicsEncoder::~HgiVkGraphicsEncoder()
 {
     if (_isRecording) {
-        TF_WARN("Graphics Encoder: [%x] is missing an EndEncodig() call.");
+        TF_WARN("GraphicsEncoder: [%x] is missing an EndEncodig() call.", this);
         EndEncoding();
     }
 }
@@ -116,20 +116,6 @@ HgiVkGraphicsEncoder::SetScissor(GfVec4i const& s)
         0,
         1,
         &scissor);
-}
-
-void
-HgiVkGraphicsEncoder::PushDebugGroup(const char* label)
-{
-    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
-    HgiVkBeginDebugMarker(_commandBuffer, label);
-}
-
-void
-HgiVkGraphicsEncoder::PopDebugGroup()
-{
-    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
-    HgiVkEndDebugMarker(_commandBuffer);
 }
 
 void
@@ -227,5 +213,33 @@ HgiVkGraphicsEncoder::DrawIndexed(
 
 // XXX Draw calls could also be build up in a buffer and submitted to gpu, see:
 // vkCmdDrawIndexedIndirect and vkCmdDrawIndexedIndirectCount
+
+void
+HgiVkGraphicsEncoder::PushDebugGroup(const char* label)
+{
+    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
+    HgiVkBeginDebugMarker(_commandBuffer, label);
+}
+
+void
+HgiVkGraphicsEncoder::PopDebugGroup()
+{
+    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
+    HgiVkEndDebugMarker(_commandBuffer);
+}
+
+void
+HgiVkGraphicsEncoder::PushTimeQuery(const char* name)
+{
+    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
+    _commandBuffer->PushTimeQuery(name);
+}
+
+void
+HgiVkGraphicsEncoder::PopTimeQuery()
+{
+    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
+    _commandBuffer->PopTimeQuery();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -19,7 +19,8 @@ bool operator==(
     const HgiShaderProgramDesc& lhs,
     const HgiShaderProgramDesc& rhs)
 {
-    return lhs.shaderFunctions == rhs.shaderFunctions;
+    return lhs.debugName == rhs.debugName &&
+           lhs.shaderFunctions == rhs.shaderFunctions;
 }
 
 bool operator!=(

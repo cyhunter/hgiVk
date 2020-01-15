@@ -27,7 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 bool operator==(
     const HgiAttachmentDesc& lhs,
-    const HgiAttachmentDesc& rhs) 
+    const HgiAttachmentDesc& rhs)
 {
     return  lhs.clearValue == rhs.clearValue &&
             lhs.loadOp == rhs.loadOp &&
@@ -57,9 +57,10 @@ std::ostream& operator<<(
 
 bool operator==(
     const HgiGraphicsEncoderDesc& lhs,
-    const HgiGraphicsEncoderDesc& rhs) 
+    const HgiGraphicsEncoderDesc& rhs)
 {
-    return  lhs.width == rhs.width &&
+    return  lhs.debugName == rhs.debugName &&
+            lhs.width == rhs.width &&
             lhs.height == rhs.height &&
             lhs.depthAttachment == rhs.depthAttachment &&
             lhs.colorAttachments == rhs.colorAttachments;

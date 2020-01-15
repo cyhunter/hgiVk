@@ -51,6 +51,7 @@ struct HgiShaderProgramDesc {
     HGI_API
     HgiShaderProgramDesc();
 
+    std::string debugName;
     HgiShaderFunctionHandleVector shaderFunctions;
 };
 

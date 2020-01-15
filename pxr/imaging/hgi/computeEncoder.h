@@ -21,50 +21,64 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGI_BLIT_ENCODER_H
-#define PXR_IMAGING_HGI_BLIT_ENCODER_H
+#ifndef PXR_IMAGING_HGI_COMPUTE_ENCODER_H
+#define PXR_IMAGING_HGI_COMPUTE_ENCODER_H
 
 #include <memory>
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/api.h"
+#include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/enums.h"
+#include "pxr/imaging/hgi/pipeline.h"
+#include "pxr/imaging/hgi/resourceBindings.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct HgiTextureGpuToCpuOp;
-struct HgiResolveImageOp;
-
-typedef std::unique_ptr<class HgiBlitEncoder> HgiBlitEncoderUniquePtr;
+typedef std::unique_ptr<class HgiComputeEncoder> HgiComputeEncoderUniquePtr;
 
 
-/// \class HgiBlitEncoder
+/// \class HgiComputeEncoder
 ///
-/// A graphics API independent abstraction of resource copy commands.
-/// HgiBlitEncoder is a lightweight object that cannot be re-used after
-/// EndEncoding. A new encoder should be acquired each frame.
+/// A graphics API independent abstraction of compute commands.
+/// HgiComputeEncoder is a lightweight object that cannot be re-used after
+/// EndEncoding. New encoders should be acquired each frame.
 /// This encoder should only be used in the thread that created it.
 ///
-class HgiBlitEncoder
+class HgiComputeEncoder
 {
 public:
     HGI_API
-    HgiBlitEncoder();
+    HgiComputeEncoder();
 
     HGI_API
-    virtual ~HgiBlitEncoder();
+    virtual ~HgiComputeEncoder();
 
     /// Finish recording of commands. No further commands can be recorded.
     HGI_API
     virtual void EndEncoding() = 0;
 
-    /// Copy a texture resource from GPU to CPU.
-    /// This call is blocking until the data is ready to be read on CPU.
+    /// Bind a pipeline state object. Usually you call this right after calling
+    /// CreateComputeEncoder to set the compute pipeline state.
+    /// The resource bindings used when creating the pipeline must be compatible
+    /// with the resources bound via BindResources().
     HGI_API
-    virtual void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) = 0;
+    virtual void BindPipeline(HgiPipelineHandle pipeline) = 0;
 
-    /// Resolve a multi-sample texture (MSAA) so it can be read from.
+    /// Bind resources such as textures and storage buffers.
+    /// Usually you call this right after BindPipeline() and the resources bound
+    /// must be compatible with the bound pipeline.
     HGI_API
-    virtual void ResolveImage(HgiResolveImageOp const& resolveOp)= 0;
+    virtual void BindResources(HgiResourceBindingsHandle resources) = 0;
+
+    /// Execute a compute shader with provided thread group count in each
+    /// dimension.
+    HGI_API
+    virtual void Dispatch(
+        uint32_t threadGrpCntX,
+        uint32_t threadGrpCntY,
+        uint32_t threadGrpCntZ) = 0;
 
     /// Push a debug marker onto the encoder.
     HGI_API
@@ -74,21 +88,10 @@ public:
     HGI_API
     virtual void PopDebugGroup() = 0;
 
-    /// Push a time query onto encoder. This records the start time.
-    /// Timer results can be retrieved via Hgi::GetTimeQueries().
-    HGI_API
-    virtual void PushTimeQuery(const char* label) = 0;
-
-    /// Pop last time query of encoder. This records the end time.
-    /// Timer results can be retrieved via Hgi::GetTimeQueries().
-    HGI_API
-    virtual void PopTimeQuery() = 0;
-
 private:
-    HgiBlitEncoder & operator=(const HgiBlitEncoder&) = delete;
-    HgiBlitEncoder(const HgiBlitEncoder&) = delete;
+    HgiComputeEncoder & operator=(const HgiComputeEncoder&) = delete;
+    HgiComputeEncoder(const HgiComputeEncoder&) = delete;
 };
-
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -86,6 +86,12 @@ public:
     HGIVK_API
     void PopDebugGroup() override;
 
+    HGIVK_API
+    void PushTimeQuery(const char* name) override;
+
+    HGIVK_API
+    void PopTimeQuery() override;
+
 private:
     HgiVkGraphicsEncoder() = delete;
     HgiVkGraphicsEncoder & operator=(const HgiVkGraphicsEncoder&) = delete;

@@ -1,6 +1,7 @@
 #ifndef PXR_IMAGING_HGI_RESOURCEBINDINGS_H
 #define PXR_IMAGING_HGI_RESOURCEBINDINGS_H
 
+#include <string>
 #include <vector>
 
 #include "pxr/pxr.h"
@@ -255,6 +256,7 @@ struct HgiResourceBindingsDesc {
     HGI_API
     HgiResourceBindingsDesc();
 
+    std::string debugName;
     HgiPipelineType pipelineType;
     HgiBufferBindDescVector buffers;
     HgiTextureBindDescVector textures;

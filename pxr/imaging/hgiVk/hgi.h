@@ -47,7 +47,8 @@ public:
     HGIVK_API
     HgiParallelGraphicsEncoderUniquePtr CreateParallelGraphicsEncoder(
         HgiGraphicsEncoderDesc const& desc,
-        HgiPipelineHandle pipeline) override;
+        HgiPipelineHandle pipeline,
+        const char* debugName=nullptr) override;
 
     HGIVK_API
     HgiBlitEncoderUniquePtr CreateBlitEncoder() override;
@@ -98,6 +99,9 @@ public:
     HGIVK_API
     void GetMemoryInfo(size_t* used, size_t* unused) override;
 
+    HGIVK_API
+    HgiTimeQueryVector const& GetTimeQueries() override;
+
 public:
 
     // Returns the Hgi vulkan instance.
@@ -138,7 +142,7 @@ public:
 
     /// Returns the max number of threads we expect to run.
     HGIVK_API
-    static unsigned int GetThreadCount();
+    static uint32_t GetThreadCount();
 
 private:
     HgiVk & operator=(const HgiVk&) = delete;

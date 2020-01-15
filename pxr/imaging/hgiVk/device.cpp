@@ -11,7 +11,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 static uint32_t
-_GetGraphicsFamilyIndex(VkPhysicalDevice physicalDevice)
+_GetGraphicsFamilyIndex(
+    VkPhysicalDevice physicalDevice,
+    bool* supportsTimeStamps)
 {
     uint32_t queueCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, 0);
@@ -24,6 +26,7 @@ _GetGraphicsFamilyIndex(VkPhysicalDevice physicalDevice)
 
     for (uint32_t i = 0; i < queueCount; i++)
         if (queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            *supportsTimeStamps = (queues[i].timestampValidBits > 0);
             return i;
         }
 
@@ -68,6 +71,7 @@ HgiVkDevice::HgiVkDevice(
     , _vkQueue(nullptr)
     , _vkPipelineCache(nullptr)
     , _supportsDebugMarkers(false)
+    , _supportsTimeStamps(false)
     , _frame(~0ull)
     , _frameStarted(false)
     , _ringBufferIndex(-1)
@@ -88,13 +92,16 @@ HgiVkDevice::HgiVkDevice(
 
     VkPhysicalDevice discrete = nullptr;
     VkPhysicalDevice fallback = nullptr;
+    bool discreteTimeStamps = false;
+    bool fallbackTimeStamps = false;
     uint32_t familyIndex = 0;
 
     for (uint32_t i = 0; i < physicalDeviceCount; i++) {
         VkPhysicalDeviceProperties props;
         vkGetPhysicalDeviceProperties(physicalDevices[i], &props);
 
-        familyIndex = _GetGraphicsFamilyIndex(physicalDevices[i]);
+        bool timeStamps = false;
+        familyIndex = _GetGraphicsFamilyIndex(physicalDevices[i], &timeStamps);
         if (familyIndex == VK_QUEUE_FAMILY_IGNORED) continue;
 
         if (deviceType == HgiVkPresentationType) {
@@ -109,14 +116,17 @@ HgiVkDevice::HgiVkDevice(
 
         if (!discrete && props.deviceType==VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
             discrete = physicalDevices[i];
+            discreteTimeStamps = timeStamps;
         }
 
         if (!fallback) {
             fallback = physicalDevices[i];
+            fallbackTimeStamps = timeStamps;
         }
     }
 
     _vkPhysicalDevice = discrete ? discrete : fallback;
+    _supportsTimeStamps = discrete ? discreteTimeStamps : fallbackTimeStamps;
 
     if (_vkPhysicalDevice) {
         vkGetPhysicalDeviceProperties(
@@ -218,6 +228,8 @@ HgiVkDevice::HgiVkDevice(
         _vkDeviceFeatures.shaderStorageImageArrayDynamicIndexing;
     features.features.sampleRateShading =
         _vkDeviceFeatures.sampleRateShading;
+    features.features.tessellationShader =
+        _vkDeviceFeatures.tessellationShader;
 
     VkDeviceCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     createInfo.queueCreateInfoCount = 1;
@@ -260,12 +272,20 @@ HgiVkDevice::HgiVkDevice(
     // Device Queue
     //
 
+    // todo For async compute we need to grab a second queue that supports
+    // compute. Dispatch the compute work there and use a fence to verify when
+    // the async compute work is done. If it's a different queue family index we
+    // also need different commandpool/bufs. (See HgiVkCommandPool constructor)
+
     const uint32_t queueIndex = 0;
     vkGetDeviceQueue(_vkDevice, _vkQueueFamilyIndex, queueIndex, &_vkQueue);
 
     // Create the ring-buffer render frames.
     for (size_t i=0; i< HgiVkRingBufferSize; i++) {
-        _frames.push_back(new HgiVkRenderFrame(this));
+        HgiVkRenderFrame* frame = new HgiVkRenderFrame(this);
+        std::string debugLabel = "Frame " + std::to_string(i);
+        frame->SetDebugName(debugLabel);
+        _frames.push_back(frame);
     }
 }
 
@@ -465,6 +485,19 @@ bool
 HgiVkDevice::GetDeviceSupportDebugMarkers() const
 {
     return _supportsDebugMarkers;
+}
+
+bool
+HgiVkDevice::GetDeviceSupportTimeStamps() const
+{
+    return _supportsTimeStamps;
+}
+
+HgiTimeQueryVector const &
+HgiVkDevice::GetTimeQueries() const
+{
+    HgiVkRenderFrame* frame = _frames[_ringBufferIndex];
+    return frame->GetTimeQueries();
 }
 
 bool

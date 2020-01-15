@@ -2,6 +2,7 @@
 #define PXR_IMAGING_HGIVK_FRAME_H
 
 #include <atomic>
+#include <string>
 #include <vector>
 
 #include "pxr/pxr.h"
@@ -45,6 +46,12 @@ public:
     /// Returns the command buffer manager of the frame.
     HGIVK_API
     HgiVkCommandBufferManager* GetCommandBufferManager();
+
+    /// Set debug name the vulkan objects held by this frame will have.
+    void SetDebugName(std::string const& name);
+
+    /// Returns all time queries recorded in the previous run of the frame.
+    HgiTimeQueryVector const & GetTimeQueries() const;
 
 private:
     HgiVkRenderFrame() = delete;

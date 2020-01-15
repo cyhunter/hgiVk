@@ -2,6 +2,7 @@
 
 #include "pxr/imaging/hgiVk/conversions.h"
 #include "pxr/imaging/hgiVk/device.h"
+#include "pxr/imaging/hgiVk/diagnostic.h"
 #include "pxr/imaging/hgiVk/shaderFunction.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -45,6 +46,16 @@ HgiVkShaderFunction::HgiVkShaderFunction(
                 HgiVkAllocator(),
                 &_vkShaderModule) == VK_SUCCESS
         );
+
+        // Debug label
+        if (!_descriptor.debugName.empty()) {
+            std::string debugLabel = "ShaderModule " + _descriptor.debugName;
+            HgiVkSetDebugName(
+                _device,
+                (uint64_t)_vkShaderModule,
+                VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT,
+                debugLabel.c_str());
+        }
     }
 }
 

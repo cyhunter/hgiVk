@@ -72,7 +72,8 @@ bool operator==(
     const HgiPipelineDesc& lhs,
     const HgiPipelineDesc& rhs)
 {
-    return lhs.pipelineType == rhs.pipelineType &&
+    return lhs.debugName == rhs.debugName &&
+           lhs.pipelineType == rhs.pipelineType &&
            lhs.resourceBindings == rhs.resourceBindings &&
            lhs.shaderProgram == rhs.shaderProgram &&
            lhs.depthState == rhs.depthState &&

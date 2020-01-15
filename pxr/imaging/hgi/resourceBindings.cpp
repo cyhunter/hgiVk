@@ -134,7 +134,8 @@ bool operator==(
     const HgiResourceBindingsDesc& lhs,
     const HgiResourceBindingsDesc& rhs)
 {
-    return lhs.pipelineType == rhs.pipelineType &&
+    return lhs.debugName == rhs.debugName &&
+           lhs.pipelineType == rhs.pipelineType &&
            lhs.buffers == rhs.buffers &&
            lhs.textures == rhs.textures &&
            lhs.pushConstants == rhs.pushConstants &&

@@ -4,6 +4,7 @@
 #include "pxr/imaging/hgiVk/commandBuffer.h"
 #include "pxr/imaging/hgiVk/conversions.h"
 #include "pxr/imaging/hgiVk/device.h"
+#include "pxr/imaging/hgiVk/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -117,6 +118,16 @@ HgiVkBuffer::HgiVkBuffer(
     // "The application may alter or free this memory as soon as the constructor
     //  of the HgiTexture has returned."
     _descriptor.data = nullptr;
+
+    // Debug label - XXX RenderDoc crashes if we set it on statingBuffer
+    if (!isStagingBuffer && !_descriptor.debugName.empty()) {
+        std::string debugLabel = "Buffer " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkBuffer,
+            VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT,
+            debugLabel.c_str());
+    }
 }
 
 HgiVkBuffer::~HgiVkBuffer()

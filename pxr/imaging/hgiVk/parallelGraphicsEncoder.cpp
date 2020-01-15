@@ -15,18 +15,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HgiVkParallelGraphicsEncoder::HgiVkParallelGraphicsEncoder(
+    const char* debugName,
     HgiVkDevice* device,
-    HgiVkCommandBuffer* cb,
+    HgiVkCommandBuffer* primaryCB,
     HgiGraphicsEncoderDesc const& desc,
     HgiPipelineHandle pipeline)
-    : HgiParallelGraphicsEncoder()
+    : HgiParallelGraphicsEncoder(debugName)
     , _device(device)
-    , _primaryCommandBuffer(cb)
+    , _primaryCommandBuffer(primaryCB)
     , _renderPass(nullptr)
     , _isRecording(true)
+    , _isDebugging(debugName!=nullptr)
     , _cmdBufBlockId(0)
 {
-    HgiVkBeginDebugMarker(_primaryCommandBuffer, "Parallel encoding");
+    if (_isDebugging) {
+        _primaryCommandBuffer->PushTimeQuery(debugName);
+        HgiVkBeginDebugMarker(_primaryCommandBuffer, debugName);
+    }
 
     // Make sure there are enough secondary commmand buffer for this parallel
     // encoder to use during CreateGraphicsEncoder().
@@ -70,7 +75,10 @@ HgiVkParallelGraphicsEncoder::EndEncoding()
     _renderPass->EndRenderPass(_primaryCommandBuffer);
     _device->ReleaseRenderPass(_renderPass);
 
-    HgiVkEndDebugMarker(_primaryCommandBuffer);
+    if (_isDebugging) {
+        HgiVkEndDebugMarker(_primaryCommandBuffer);
+        _primaryCommandBuffer->PopTimeQuery();
+    }
 
     // No more recording allowed
     _primaryCommandBuffer = nullptr;

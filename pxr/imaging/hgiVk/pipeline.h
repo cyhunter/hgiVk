@@ -33,12 +33,15 @@ public:
     virtual ~HgiVkPipeline();
 
     /// Bind this pipeline to GPU.
+    /// For a graphics pipeline, render pass must be provided.
+    /// For a compute pipeline, render pass should be null.
     HGIVK_API
     void BindPipeline(
         HgiVkCommandBuffer* cb,
         HgiVkRenderPass* rp);
 
     // Create pipeline object for _descriptor and render pass.
+    HGIVK_API
     VkPipeline AcquirePipeline(HgiVkRenderPass* rp);
 
 private:
@@ -53,6 +56,12 @@ private:
         HgiGraphicsEncoderDesc desc;
         VkPipeline vkPipeline;
     };
+
+    // Create graphics pipeline.
+    VkPipeline _AcquireGraphicsPipeline(HgiVkRenderPass* rp);
+
+    // Create compute pipeline.
+    VkPipeline _AcquireComputePipeline();
 
 private:
     HgiVkDevice* _device;

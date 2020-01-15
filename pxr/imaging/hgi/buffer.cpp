@@ -21,9 +21,11 @@ bool operator==(
     const HgiBufferDesc& lhs,
     const HgiBufferDesc& rhs)
 {
-    return lhs.usage == rhs.usage &&
+    return lhs.debugName == rhs.debugName &&
+           lhs.usage == rhs.usage &&
            lhs.byteSize == rhs.byteSize
-           // lhs.data == rhs.data &&    // Intentionally omitted
+           // Omitted because data ptr is set to nullptr after CreateBuffer
+           // lhs.data == rhs.data &&
     ;
 }
 

@@ -2,6 +2,7 @@
 #include "pxr/imaging/hgiVk/commandBuffer.h"
 #include "pxr/imaging/hgiVk/conversions.h"
 #include "pxr/imaging/hgiVk/device.h"
+#include "pxr/imaging/hgiVk/diagnostic.h"
 #include "pxr/imaging/hgiVk/resourceBindings.h"
 #include "pxr/imaging/hgiVk/texture.h"
 #include "pxr/imaging/hgiVk/vulkan.h"
@@ -74,6 +75,16 @@ HgiVkResourceBindings::HgiVkResourceBindings(
             &_vkDescriptorSetLayout) == VK_SUCCESS
     );
 
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Descriptor Set Layout " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkDescriptorSetLayout,
+            VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT_EXT,
+            debugLabel.c_str());
+    }
+
     //
     // Create the descriptor pool.
     //
@@ -86,7 +97,7 @@ HgiVkResourceBindings::HgiVkResourceBindings(
     //
     // If having a descriptor pool per resourceBindings turns out to be too much
     // overhead (e.g. if many resourceBindings are created/destroyed each frame)
-    // then we can consider an approach similar to GetThreadLocalCommandBuffer.
+    // then we can consider an approach similar to thread local command buffers.
     // We could allocate larger descriptor pools per frame and per thread.
     //
 
@@ -113,6 +124,16 @@ HgiVkResourceBindings::HgiVkResourceBindings(
             &_vkDescriptorPool) == VK_SUCCESS
     );
 
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Descriptor Pool " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkDescriptorPool,
+            VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_POOL_EXT,
+            debugLabel.c_str());
+    }
+
     //
     // Create Descriptor Set
     //
@@ -129,6 +150,16 @@ HgiVkResourceBindings::HgiVkResourceBindings(
             &allocateInfo,
             &_vkDescriptorSet) == VK_SUCCESS
     );
+
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Descriptor Set " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkDescriptorSet,
+            VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT,
+            debugLabel.c_str());
+    }
 
     //
     // Textures
@@ -256,6 +287,16 @@ HgiVkResourceBindings::HgiVkResourceBindings(
             HgiVkAllocator(),
             &_vkPipelineLayout) == VK_SUCCESS
     );
+
+    // Debug label
+    if (!_descriptor.debugName.empty()) {
+        std::string debugLabel = "Pipeline Layout " + _descriptor.debugName;
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkPipelineLayout,
+            VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT,
+            debugLabel.c_str());
+    }
 }
 
 HgiVkResourceBindings::~HgiVkResourceBindings()

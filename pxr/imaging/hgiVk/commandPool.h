@@ -34,6 +34,10 @@ public:
     HGIVK_API
     VkCommandPool GetVulkanCommandPool() const;
 
+    /// Set debug name.
+    HGIVK_API
+    void SetDebugName(std::string const& name);
+
 private:
     HgiVkCommandPool() = delete;
     HgiVkCommandPool & operator= (const HgiVkCommandPool&) = delete;

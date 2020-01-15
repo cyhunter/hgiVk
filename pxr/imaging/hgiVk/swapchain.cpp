@@ -325,6 +325,16 @@ HgiVkSwapchain::_CreateVulkanSwapchain()
     );
     TF_VERIFY(_vkSwapchain, "Swapchain invalid");
 
+    // Debug label
+    {
+        std::string debugLabel = "Swapchain HgiVk";
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkSwapchain,
+            VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT,
+            debugLabel.c_str());
+    }
+
     //
     // Get swapchain images
     //
@@ -363,6 +373,16 @@ HgiVkSwapchain::_CreateVulkanSwapchain()
             &_vkAcquireSemaphore) == VK_SUCCESS
     );
 
+    // Debug label
+    {
+        std::string debugLabel = "Semaphore Acquire HgiVk Swapchain";
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkAcquireSemaphore,
+            VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT,
+            debugLabel.c_str());
+    }
+
     TF_VERIFY(
         vkCreateSemaphore(
             _device->GetVulkanDevice(),
@@ -370,6 +390,16 @@ HgiVkSwapchain::_CreateVulkanSwapchain()
             HgiVkAllocator(),
             &_vkReleaseSemaphore) == VK_SUCCESS
     );
+
+    // Debug label
+    {
+        std::string debugLabel = "Semaphore Release HgiVk Swapchain";
+        HgiVkSetDebugName(
+            _device,
+            (uint64_t)_vkReleaseSemaphore,
+            VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT,
+            debugLabel.c_str());
+    }
 
     //
     // Create image views
@@ -392,6 +422,17 @@ HgiVkSwapchain::_CreateVulkanSwapchain()
                 &_vkImageViews[i]) == VK_SUCCESS
         );
         TF_VERIFY(_vkImageViews[i], "ImageView creation failed");
+
+        // Debug label
+        {
+            std::string debugLabel = "ImageView " + std::to_string(i) +
+                                     " HgiVk Swapchain";
+            HgiVkSetDebugName(
+                _device,
+                (uint64_t)_vkImageViews[i],
+                VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT,
+                debugLabel.c_str());
+        }
     }
 
     //

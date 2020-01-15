@@ -1,5 +1,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/imaging/hgiVk/device.h"
+#include "pxr/imaging/hgiVk/diagnostic.h"
 #include "pxr/imaging/hgiVk/frame.h"
 
 
@@ -76,6 +77,25 @@ HgiVkCommandBufferManager*
 HgiVkRenderFrame::GetCommandBufferManager()
 {
     return &_commandBufferManager;
+}
+
+void
+HgiVkRenderFrame::SetDebugName(std::string const& name)
+{
+    std::string debugLabel = "Fence " + name;
+    HgiVkSetDebugName(
+        _device,
+        (uint64_t)_vkFence,
+        VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT,
+        debugLabel.c_str());
+
+    _commandBufferManager.SetDebugName(name);
+}
+
+HgiTimeQueryVector const &
+HgiVkRenderFrame::GetTimeQueries() const
+{
+    return _commandBufferManager.GetTimeQueries();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

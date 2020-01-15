@@ -190,6 +190,7 @@ void
 HgiVkSetDebugName(
     HgiVkDevice* device,
     uint64_t vulkanObject,
+    uint32_t objectType,
     const char* name)
 {
     if (!HgiVkIsDebugEnabled() || !_vkDebugMarkerSetObjectNameEXT) return;
@@ -197,7 +198,7 @@ HgiVkSetDebugName(
     VkDebugMarkerObjectNameInfoEXT debugInfo =
         {VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT};
     debugInfo.object = vulkanObject;
-    debugInfo.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT;
+    debugInfo.objectType = VkDebugReportObjectTypeEXT(objectType);
     debugInfo.pObjectName = name;
     _vkDebugMarkerSetObjectNameEXT(device->GetVulkanDevice(), &debugInfo);
 }

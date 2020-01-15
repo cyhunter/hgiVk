@@ -37,20 +37,6 @@ HgiVkBlitEncoder::EndEncoding()
 }
 
 void
-HgiVkBlitEncoder::PushDebugGroup(const char* label)
-{
-    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
-    HgiVkBeginDebugMarker(_commandBuffer, label);
-}
-
-void
-HgiVkBlitEncoder::PopDebugGroup()
-{
-    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
-    HgiVkEndDebugMarker(_commandBuffer);
-}
-
-void
 HgiVkBlitEncoder::CopyTextureGpuToCpu(
     HgiTextureGpuToCpuOp const& copyOp)
 {
@@ -67,8 +53,10 @@ HgiVkBlitEncoder::CopyTextureGpuToCpu(
         return;
     }
 
+    HgiTextureDesc const& desc = srcTexture->GetDescriptor();
+
     uint32_t layerCnt = copyOp.startLayer + copyOp.numLayers;
-    if (!TF_VERIFY(srcTexture->GetLayerCount() >= layerCnt,
+    if (!TF_VERIFY(desc.layerCount >= layerCnt,
         "Texture has less layers than attempted to be copied")) {
         return;
     }
@@ -273,14 +261,14 @@ HgiVkBlitEncoder::ResolveImage(
     HgiTextureDesc const& srcDesc = srcTexture->GetDescriptor();
     srcInfo.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     srcInfo.baseArrayLayer = 0;
-    srcInfo.layerCount = srcTexture->GetLayerCount();
+    srcInfo.layerCount = srcDesc.layerCount;
     srcInfo.mipLevel = 0;
 
     VkImageSubresourceLayers dstInfo;
     HgiTextureDesc const& dstDesc = dstTexture->GetDescriptor();
     dstInfo.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     dstInfo.baseArrayLayer = 0;
-    dstInfo.layerCount = dstTexture->GetLayerCount();
+    dstInfo.layerCount = dstDesc.layerCount;
     dstInfo.mipLevel = 0;
 
     VkExtent3D srcExtent;
@@ -324,5 +312,32 @@ HgiVkBlitEncoder::ResolveImage(
         VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);       // consumer stage
 }
 
+void
+HgiVkBlitEncoder::PushDebugGroup(const char* label)
+{
+    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
+    HgiVkBeginDebugMarker(_commandBuffer, label);
+}
+
+void
+HgiVkBlitEncoder::PopDebugGroup()
+{
+    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
+    HgiVkEndDebugMarker(_commandBuffer);
+}
+
+void
+HgiVkBlitEncoder::PushTimeQuery(const char* name)
+{
+    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
+    _commandBuffer->PushTimeQuery(name);
+}
+
+void
+HgiVkBlitEncoder::PopTimeQuery()
+{
+    if (!TF_VERIFY(_isRecording && _commandBuffer)) return;
+    _commandBuffer->PopTimeQuery();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

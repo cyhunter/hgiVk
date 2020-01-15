@@ -21,37 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hgi/texture.h"
+#include "pxr/imaging/hgi/computeEncoder.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiTexture::HgiTexture(HgiTextureDesc const&)
+HgiComputeEncoder::HgiComputeEncoder()
 {
 }
 
-HgiTexture::~HgiTexture()
+HgiComputeEncoder::~HgiComputeEncoder()
 {
 }
-
-bool operator==(const HgiTextureDesc& lhs,
-    const HgiTextureDesc& rhs)
-{
-    return  lhs.debugName == rhs.debugName &&
-            lhs.usage == rhs.usage &&
-            lhs.format == rhs.format &&
-            lhs.dimensions == rhs.dimensions &&
-            lhs.sampleCount == rhs.sampleCount &&
-            lhs.pixelsByteSize == rhs.pixelsByteSize
-            // Omitted because data ptr is set to nullptr after CreateTexture
-            // lhs.pixelData == rhs.pixelData
-    ;
-}
-
-bool operator!=(const HgiTextureDesc& lhs,
-    const HgiTextureDesc& rhs)
-{
-    return !(lhs == rhs);
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

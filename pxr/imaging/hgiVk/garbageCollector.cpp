@@ -15,8 +15,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-thread_local uint16_t _gcThreadLocalIndex = 0;
-thread_local uint64_t _gcThreadLocalFrame = ~0ull;
+thread_local uint16_t _HgiVkgcThreadLocalIndex = 0;
+thread_local uint64_t _HgiVkgcThreadLocalFrame = ~0ull;
 
 
 HgiVkGarbageCollector::HgiVkGarbageCollector()
@@ -36,17 +36,17 @@ HgiVkGarbageCollector::ScheduleObjectDestruction(
     HgiVkObject const& obj)
 {
     // First time thread is used in new frame, reserve index into vector.
-    if (_gcThreadLocalFrame != _frame) {
-        _gcThreadLocalFrame = _frame;
-        _gcThreadLocalIndex = _numUsedExpired.fetch_add(1);
+    if (_HgiVkgcThreadLocalFrame != _frame) {
+        _HgiVkgcThreadLocalFrame = _frame;
+        _HgiVkgcThreadLocalIndex = _numUsedExpired.fetch_add(1);
     }
 
-    if (_gcThreadLocalIndex >= _expiredVulkanObjects.size()) {
+    if (_HgiVkgcThreadLocalIndex >= _expiredVulkanObjects.size()) {
         TF_CODING_ERROR("GC numThreads > HgiVk::GetThreadCount");
-        _gcThreadLocalIndex = 0;
+        _HgiVkgcThreadLocalIndex = 0;
     }
 
-    _expiredVulkanObjects[_gcThreadLocalIndex].emplace_back(obj);
+    _expiredVulkanObjects[_HgiVkgcThreadLocalIndex].emplace_back(obj);
 }
 
 void
@@ -119,7 +119,7 @@ HgiVkGarbageCollector::DestroyGarbage(uint64_t frame)
 
     // Make sure we have enough room for each thread, just in case the thread
     // count has changed since last frame.
-    unsigned numThreads = HgiVk::GetThreadCount();
+    uint32_t numThreads = HgiVk::GetThreadCount();
     _expiredVulkanObjects.resize(numThreads);
 }
 

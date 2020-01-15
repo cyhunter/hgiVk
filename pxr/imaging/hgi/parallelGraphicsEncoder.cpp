@@ -25,7 +25,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiParallelGraphicsEncoder::HgiParallelGraphicsEncoder()
+HgiParallelGraphicsEncoder::HgiParallelGraphicsEncoder(const char* debugName)
 {
 }
 

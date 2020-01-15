@@ -9,6 +9,7 @@ pxr_library(hgi
     PUBLIC_CLASSES
         blitEncoder
         buffer
+        computeEncoder
         graphicsEncoder
         graphicsEncoderDesc
         hgi
@@ -22,6 +23,7 @@ pxr_library(hgi
     PUBLIC_HEADERS
         api.h
         blitEncoderOps.h
+        encoderOps.h
         enums.h
         types.h
 )

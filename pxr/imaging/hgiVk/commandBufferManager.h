@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <memory>
+#include <string>
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiVk/api.h"
@@ -90,6 +91,14 @@ public:
         size_t id,
         HgiVkCommandBuffer* primaryCommandBuffer);
 
+    /// Set debug name the vulkan objects held by this manager will have.
+    HGIVK_API
+    void SetDebugName(std::string const& name);
+
+    /// Returns the time queries of all command buffers of the previous run.
+    HGIVK_API
+    HgiTimeQueryVector const & GetTimeQueries() const;
+
 private:
     HgiVkCommandBufferManager() = delete;
     HgiVkCommandBufferManager & operator= (
@@ -136,6 +145,12 @@ private:
     // This semaphore is used to synchronize the submission of resource and draw
     // command buffers.
     VkSemaphore _vkSemaphore;
+
+    // Time queries of previous run.
+    HgiTimeQueryVector _timeQueries;
+
+    // Debug label
+    std::string _debugName;
 };
 
 

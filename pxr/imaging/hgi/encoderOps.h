@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,37 +21,32 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hgi/texture.h"
+#ifndef PXR_IMAGING_HGI_ENCODER_OPS_H
+#define PXR_IMAGING_HGI_ENCODER_OPS_H
+
+#include <string>
+#include <vector>
+
+#include "pxr/pxr.h"
+#include "pxr/imaging/hgi/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiTexture::HgiTexture(HgiTextureDesc const&)
-{
-}
+/// \struct HgiVkTimeQuery
+///
+/// Represents a time query used for testing performance of commands.
+///
+struct HgiTimeQuery {
+    uint32_t beginStamp = 0;
+    uint32_t endStamp = 0;
+    std::string name;
+    float nanoSeconds = 0.0f;
+};
 
-HgiTexture::~HgiTexture()
-{
-}
-
-bool operator==(const HgiTextureDesc& lhs,
-    const HgiTextureDesc& rhs)
-{
-    return  lhs.debugName == rhs.debugName &&
-            lhs.usage == rhs.usage &&
-            lhs.format == rhs.format &&
-            lhs.dimensions == rhs.dimensions &&
-            lhs.sampleCount == rhs.sampleCount &&
-            lhs.pixelsByteSize == rhs.pixelsByteSize
-            // Omitted because data ptr is set to nullptr after CreateTexture
-            // lhs.pixelData == rhs.pixelData
-    ;
-}
-
-bool operator!=(const HgiTextureDesc& lhs,
-    const HgiTextureDesc& rhs)
-{
-    return !(lhs == rhs);
-}
+typedef std::vector<HgiTimeQuery> HgiTimeQueryVector;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif
+

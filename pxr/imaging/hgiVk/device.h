@@ -60,8 +60,7 @@ public:
 
     /// Commits provided command buffers to queue.
     /// `fence` is optional and can be nullptr.
-    /// Thread safety: This call ensures only one thread can submit at one
-    /// time via atomic spin.
+    /// Thread safety: This call ensures only one thread can submit at once.
     HGIVK_API
     void SubmitToQueue(
         std::vector<VkSubmitInfo> const& submitInfos,
@@ -140,6 +139,13 @@ public:
     HGIVK_API
     bool GetDeviceSupportDebugMarkers() const;
 
+    /// Returns true if the device support time stamps
+    HGIVK_API
+    bool GetDeviceSupportTimeStamps() const;
+
+    /// Returns time queries recorded in the previous run of the current frame.
+    HgiTimeQueryVector const & GetTimeQueries() const;
+
 private:
     HgiVkDevice() = delete;
     HgiVkDevice & operator=(const HgiVkDevice&) = delete;
@@ -161,6 +167,7 @@ private:
     VkPipelineCache _vkPipelineCache;
     std::vector<VkExtensionProperties> _extensions;
     bool _supportsDebugMarkers;
+    bool _supportsTimeStamps;
 
     // Vulkan queue is externally synchronized
     std::mutex _queuelock;
